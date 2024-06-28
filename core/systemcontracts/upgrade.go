@@ -4,17 +4,16 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-
 	"github.com/ethereum/go-ethereum/core/systemcontracts/bruno"
 	"github.com/ethereum/go-ethereum/core/systemcontracts/euler"
 	"github.com/ethereum/go-ethereum/core/systemcontracts/feynman"
 	feynmanFix "github.com/ethereum/go-ethereum/core/systemcontracts/feynman_fix"
 	"github.com/ethereum/go-ethereum/core/systemcontracts/gibbs"
+	haberFix "github.com/ethereum/go-ethereum/core/systemcontracts/haber_fix"
 	"github.com/ethereum/go-ethereum/core/systemcontracts/kepler"
 	"github.com/ethereum/go-ethereum/core/systemcontracts/luban"
 	"github.com/ethereum/go-ethereum/core/systemcontracts/mirror"
@@ -23,6 +22,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/systemcontracts/planck"
 	"github.com/ethereum/go-ethereum/core/systemcontracts/plato"
 	"github.com/ethereum/go-ethereum/core/systemcontracts/ramanujan"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 type UpgradeConfig struct {
@@ -75,6 +76,8 @@ var (
 	feynmanUpgrade = make(map[string]*Upgrade)
 
 	feynmanFixUpgrade = make(map[string]*Upgrade)
+
+	haberFixUpgrade = make(map[string]*Upgrade)
 )
 
 func init() {
@@ -680,72 +683,6 @@ func init() {
 		},
 	}
 
-	feynmanUpgrade[rialtoNet] = &Upgrade{
-		UpgradeName: "feynman",
-		Configs: []*UpgradeConfig{
-			{
-				ContractAddr: common.HexToAddress(ValidatorContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoValidatorContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(SlashContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoSlashContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(TokenHubContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoTokenHubContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(GovHubContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoGovHubContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(CrossChainContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoCrossChainContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(StakingContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoStakingContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(StakeHubContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoStakeHubContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(StakeCreditContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.MainnetStakeCreditContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(GovernorContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoGovernorContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(GovTokenContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.MainnetGovTokenContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(TimelockContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoTimelockContract,
-			},
-			{
-				ContractAddr: common.HexToAddress(TokenRecoverPortalContract),
-				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/2d6372ddba77902ef01e45887a425938376d5a5c",
-				Code:         feynman.RialtoTokenRecoverPortalContract,
-			},
-		},
-	}
-
 	// This upgrade is to fix an error on testnet only. So the upgrade config of mainnet is empty.
 	feynmanFixUpgrade[mainNet] = &Upgrade{
 		UpgradeName: "feynmanFix",
@@ -768,9 +705,36 @@ func init() {
 		},
 	}
 
-	feynmanFixUpgrade[rialtoNet] = &Upgrade{
-		UpgradeName: "feynmanFix",
-		Configs:     []*UpgradeConfig{},
+	haberFixUpgrade[mainNet] = &Upgrade{
+		UpgradeName: "haberFix",
+		Configs: []*UpgradeConfig{
+			{
+				ContractAddr: common.HexToAddress(ValidatorContract),
+				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/b743ce3f1f1e94c349b175cd6593bc263463b33b",
+				Code:         haberFix.MainnetValidatorContract,
+			},
+			{
+				ContractAddr: common.HexToAddress(SlashContract),
+				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/b743ce3f1f1e94c349b175cd6593bc263463b33b",
+				Code:         haberFix.MainnetSlashContract,
+			},
+		},
+	}
+
+	haberFixUpgrade[chapelNet] = &Upgrade{
+		UpgradeName: "haberFix",
+		Configs: []*UpgradeConfig{
+			{
+				ContractAddr: common.HexToAddress(ValidatorContract),
+				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/b743ce3f1f1e94c349b175cd6593bc263463b33b",
+				Code:         haberFix.ChapelValidatorContract,
+			},
+			{
+				ContractAddr: common.HexToAddress(SlashContract),
+				CommitUrl:    "https://github.com/bnb-chain/bsc-genesis-contract/commit/b743ce3f1f1e94c349b175cd6593bc263463b33b",
+				Code:         haberFix.ChapelSlashContract,
+			},
+		},
 	}
 }
 
@@ -848,6 +812,10 @@ func UpgradeBuildInSystemContract(config *params.ChainConfig, blockNumber *big.I
 		applySystemContractUpgrade(feynmanFixUpgrade[network], blockNumber, statedb, logger)
 	}
 
+	if config.IsOnHaberFix(blockNumber, lastBlockTime, blockTime) {
+		applySystemContractUpgrade(haberFixUpgrade[network], blockNumber, statedb, logger)
+	}
+
 	/*
 		apply other upgrades
 	*/
@@ -870,7 +838,7 @@ func applySystemContractUpgrade(upgrade *Upgrade, blockNumber *big.Int, statedb 
 			}
 		}
 
-		newContractCode, err := hex.DecodeString(cfg.Code)
+		newContractCode, err := hex.DecodeString(strings.TrimSpace(cfg.Code))
 		if err != nil {
 			panic(fmt.Errorf("failed to decode new contract code: %s", err.Error()))
 		}

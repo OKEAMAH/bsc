@@ -143,7 +143,7 @@ func (ec *Client) BlobSidecars(ctx context.Context, blockNrOrHash rpc.BlockNumbe
 // BlobSidecarByTxHash return a sidecar of a given blob transaction
 func (ec *Client) BlobSidecarByTxHash(ctx context.Context, hash common.Hash) (*types.BlobTxSidecar, error) {
 	var r *types.BlobTxSidecar
-	err := ec.c.CallContext(ctx, &r, "eth_getBlockSidecarByTxHash", hash)
+	err := ec.c.CallContext(ctx, &r, "eth_getBlobSidecarByTxHash", hash)
 	if err == nil && r == nil {
 		return nil, ethereum.NotFound
 	}
@@ -749,6 +749,13 @@ func (ec *Client) SendTransactionConditional(ctx context.Context, tx *types.Tran
 func (ec *Client) MevRunning(ctx context.Context) (bool, error) {
 	var result bool
 	err := ec.c.CallContext(ctx, &result, "mev_running")
+	return result, err
+}
+
+// HasBuilder returns whether the builder is registered
+func (ec *Client) HasBuilder(ctx context.Context, address common.Address) (bool, error) {
+	var result bool
+	err := ec.c.CallContext(ctx, &result, "mev_hasBuilder", address)
 	return result, err
 }
 
